@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: smartmart-backend
+    runtime: docker
+    rootDir: smartmart-backend
+    dockerfilePath: ./Dockerfile

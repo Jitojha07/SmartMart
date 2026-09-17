@@ -50,7 +50,7 @@ function Register() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/auth/register",
+        "https://smartmart-w2gb.onrender.com/api/auth/register",
         {
           name: formData.name,
           email: formData.email,

@@ -15,10 +15,28 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf.disable())
+
+            // Enable CORS
+            .cors(cors -> {})
+
             .authorizeHttpRequests(auth -> auth
+                // Allow CORS preflight requests
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.OPTIONS,
+                    "/**"
+                ).permitAll()
+
+                // Allow authentication APIs
+                .requestMatchers(
+                    "/api/auth/**"
+                ).permitAll()
+
+                // Allow user APIs
                 .requestMatchers(
                     "/api/users/**"
                 ).permitAll()
+
+                // Currently allow all SmartMart APIs
                 .anyRequest().permitAll()
             );
 

@@ -18,6 +18,7 @@ public class CorsConfig {
 
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://smartmart-three.vercel.app",
+                "https://smartmart-git-main-jit-ojhas-projects.vercel.app",
                 "http://localhost:5173"
         ));
 

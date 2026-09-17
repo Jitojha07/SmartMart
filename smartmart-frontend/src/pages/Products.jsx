@@ -36,7 +36,7 @@ function Products() {
             setError("");
 
             const response = await axios.get(
-                "http://localhost:8080/api/products"
+                " https://smartmart-w2gb.onrender.com/api/products"
             );
 
             console.log("Products received from backend:", response.data);

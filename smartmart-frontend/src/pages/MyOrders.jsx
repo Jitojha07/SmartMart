@@ -19,7 +19,7 @@ function MyOrders() {
     const fetchOrders = async () => {
         try {
             const response = await axios.get(
-                "http://localhost:8080/api/orders"
+                " https://smartmart-w2gb.onrender.com/api/orders"
             );
 
             setOrders(response.data);

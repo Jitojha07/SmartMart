@@ -66,7 +66,7 @@ function ProductDetails() {
             setLoading(true);
 
             const response = await axios.get(
-                `http://localhost:8080/api/products/${id}`
+                ` https://smartmart-w2gb.onrender.com/api/products/${id}`
             );
 
             setProduct(response.data);
@@ -82,7 +82,7 @@ function ProductDetails() {
     const fetchAllProducts = async () => {
         try {
             const response = await axios.get(
-                "http://localhost:8080/api/products"
+                " https://smartmart-w2gb.onrender.com/api/products"
             );
 
             setAllProducts(response.data);

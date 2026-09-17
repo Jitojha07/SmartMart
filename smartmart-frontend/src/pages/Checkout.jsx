@@ -117,7 +117,7 @@ function Checkout() {
             // =====================================================
 
             const response = await axios.post(
-                "http://localhost:8080/api/orders",
+                " https://smartmart-w2gb.onrender.com/api/orders",
                 orderData
             );
 

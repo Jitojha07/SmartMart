@@ -29,29 +29,51 @@ function Navbar() {
   // ==========================================
   // LOAD USER FROM LOCAL STORAGE
   // ==========================================
+  
   const loadUser = () => {
-    try {
-      const savedUser = sessionStorage.getItem("smartmartUser");
+      try {
+          // First check localStorage
+          let savedUser =
+              localStorage.getItem("smartmartUser");
 
-      console.log("Navbar saved user:", savedUser);
+          // If not found, check sessionStorage
+          if (!savedUser) {
+              savedUser =
+                  sessionStorage.getItem("smartmartUser");
+          }
 
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
+          console.log(
+              "Navbar saved user:",
+              savedUser
+          );
 
-        console.log("Navbar parsed user:", parsedUser);
+          if (savedUser) {
+              const parsedUser =
+                  JSON.parse(savedUser);
 
-        setUser(parsedUser);
-      } else {
-        setUser(null);
+              console.log(
+                  "Navbar parsed user:",
+                  parsedUser
+              );
+
+              setUser(parsedUser);
+          } else {
+              setUser(null);
+          }
+
+      } catch (error) {
+          console.error(
+              "Error loading user:",
+              error
+          );
+
+          localStorage.removeItem("smartmartUser");
+          sessionStorage.removeItem("smartmartUser");
+
+          setUser(null);
       }
-
-    } catch (error) {
-      console.error("Error loading user:", error);
-
-      sessionStorage.removeItem("smartmartUser");
-      setUser(null);
-    }
   };
+
 
   // ==========================================
   // INITIAL LOAD

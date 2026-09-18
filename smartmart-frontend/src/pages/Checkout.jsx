@@ -40,32 +40,75 @@ function Checkout() {
         }));
     };
 
-    
+    // =====================================================
+    // GET LOGGED-IN USER
+    // CHECK BOTH localStorage AND sessionStorage
+    // =====================================================
+    const getLoggedInUser = () => {
+        try {
+            const localUser = localStorage.getItem("smartmartUser");
+
+            if (localUser) {
+                return JSON.parse(localUser);
+            }
+
+            const sessionUser =
+                sessionStorage.getItem("smartmartUser");
+
+            if (sessionUser) {
+                return JSON.parse(sessionUser);
+            }
+
+            return null;
+        } catch (error) {
+            console.error(
+                "Error reading logged-in user:",
+                error
+            );
+
+            return null;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-
             // =====================================================
             // GET LOGGED-IN USER
             // =====================================================
 
-            const storedUser = localStorage.getItem("smartmartUser");
+            const user = getLoggedInUser();
 
-            if (!storedUser) {
+            console.log(
+                "Logged-in user from storage:",
+                user
+            );
+
+            if (!user) {
                 alert("Please login before placing an order.");
                 navigate("/login");
                 return;
             }
 
-            const user = JSON.parse(storedUser);
-
             if (!user.id) {
-                alert("User ID is missing. Please login again.");
+                console.error(
+                    "Logged-in user does not contain ID:",
+                    user
+                );
+
+                alert(
+                    "User ID is missing. Please logout and login again."
+                );
+
                 navigate("/login");
                 return;
             }
 
+            console.log(
+                "Logged-in User ID:",
+                user.id
+            );
 
             // =====================================================
             // PAYMENT METHOD
@@ -76,13 +119,11 @@ function Checkout() {
                     'input[name="payment"]:checked'
                 )?.value || "COD";
 
-
             // =====================================================
             // CREATE ORDER ITEMS
             // =====================================================
 
             const orderItems = cartItems.map((item) => {
-
                 const productId =
                     item.productId ??
                     item.id;
@@ -117,34 +158,70 @@ function Checkout() {
                 };
             });
 
-
             // =====================================================
             // COMPLETE ORDER DATA
             // =====================================================
 
             const orderData = {
+                // IMPORTANT
+                // This will now contain the actual logged-in user ID
                 userId: Number(user.id),
 
                 firstName: formData.firstName,
                 lastName: formData.lastName,
-                email: formData.email,
+
+                // Use checkout email if entered,
+                // otherwise use logged-in user's email
+                email:
+                    formData.email ||
+                    user.email ||
+                    "",
+
                 phone: formData.phone,
                 address: formData.address,
                 city: formData.city,
                 state: formData.state,
                 pincode: formData.pincode,
+
                 paymentMethod,
+
                 totalAmount: Number(totalPrice),
+
                 status: "PLACED",
-                orderItems
+
+                orderItems,
             };
 
+            // =====================================================
+            // DEBUG
+            // =====================================================
 
             console.log(
-                "Sending order:",
+                "===================================="
+            );
+
+            console.log(
+                "Sending order:"
+            );
+
+            console.log(
+                "User ID:",
+                user.id
+            );
+
+            console.log(
+                "Order userId:",
+                orderData.userId
+            );
+
+            console.log(
+                "Complete order data:",
                 orderData
             );
 
+            console.log(
+                "===================================="
+            );
 
             // =====================================================
             // CREATE ORDER
@@ -155,15 +232,16 @@ function Checkout() {
                 orderData
             );
 
-
             console.log(
                 "Order created successfully:",
                 response.data
             );
 
+            // =====================================================
+            // ORDER SUCCESS
+            // =====================================================
 
             const orderId = response.data.id;
-
 
             clearCart();
 
@@ -172,7 +250,6 @@ function Checkout() {
             );
 
         } catch (error) {
-
             console.error(
                 "Order creation failed:",
                 error
@@ -186,6 +263,9 @@ function Checkout() {
         }
     };
 
+    // =====================================================
+    // EMPTY CART
+    // =====================================================
 
     if (cartItems.length === 0) {
         return (
@@ -565,20 +645,12 @@ function Checkout() {
                                 <div className="border-t border-gray-200 mt-6 pt-5 space-y-4">
 
                                     <div className="flex justify-between text-gray-600">
-                                        <span>
-                                            Items
-                                        </span>
-
-                                        <span>
-                                            {totalItems}
-                                        </span>
+                                        <span>Items</span>
+                                        <span>{totalItems}</span>
                                     </div>
 
                                     <div className="flex justify-between text-gray-600">
-                                        <span>
-                                            Delivery
-                                        </span>
-
+                                        <span>Delivery</span>
                                         <span className="text-green-600 font-medium">
                                             FREE
                                         </span>

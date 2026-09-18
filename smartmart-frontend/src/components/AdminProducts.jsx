@@ -12,7 +12,7 @@ import {
   IndianRupee,
 } from "lucide-react";
 
-const API = "http://localhost:8080/api";
+const API = "https://smartmart-w2gb.onrender.com/api";
 
 function AdminProducts() {
   const [products, setProducts] = useState([]);

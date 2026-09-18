@@ -50,8 +50,7 @@ function Checkout() {
             // GET LOGGED-IN USER
             // =====================================================
 
-            const storedUser =
-                localStorage.getItem("smartmartUser");
+            const storedUser = localStorage.getItem("smartmartUser");
 
             if (!storedUser) {
                 alert("Please login before placing an order.");
@@ -62,7 +61,7 @@ function Checkout() {
             const user = JSON.parse(storedUser);
 
             if (!user.id) {
-                alert("User information is missing. Please login again.");
+                alert("User ID is missing. Please login again.");
                 navigate("/login");
                 return;
             }
@@ -124,9 +123,6 @@ function Checkout() {
             // =====================================================
 
             const orderData = {
-
-                // IMPORTANT:
-                // Store the logged-in customer's ID
                 userId: Number(user.id),
 
                 firstName: formData.firstName,
@@ -137,14 +133,10 @@ function Checkout() {
                 city: formData.city,
                 state: formData.state,
                 pincode: formData.pincode,
-
-                paymentMethod: paymentMethod,
-
+                paymentMethod,
                 totalAmount: Number(totalPrice),
-
                 status: "PLACED",
-
-                orderItems: orderItems,
+                orderItems
             };
 
 

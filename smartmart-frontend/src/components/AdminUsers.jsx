@@ -20,7 +20,7 @@ function AdminUsers() {
       setError("");
 
       const response = await axios.get(
-        "http://localhost:8080/api/users"
+        "https://smartmart-w2gb.onrender.com/api/users"
       );
 
       console.log("Users from backend:", response.data);

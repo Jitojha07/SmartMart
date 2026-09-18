@@ -179,7 +179,7 @@ function AdminDashboard() {
       setOrderError("");
 
       const response = await axios.get(
-        "http://localhost:8080/api/orders"
+        "https://smartmart-w2gb.onrender.com/api/orders"
       );
 
       console.log(
@@ -246,7 +246,7 @@ function AdminDashboard() {
       setUserError("");
 
       const response = await axios.get(
-        "http://localhost:8080/api/users"
+        "https://smartmart-w2gb.onrender.com/api/users"
       );
 
       console.log(
@@ -278,7 +278,7 @@ function AdminDashboard() {
       setLoadingProducts(true);
 
       const response = await axios.get(
-        "http://localhost:8080/api/products"
+        "https://smartmart-w2gb.onrender.com/api/products"
       );
 
       console.log(
@@ -307,7 +307,7 @@ function AdminDashboard() {
   ) => {
     try {
       await axios.put(
-        `http://localhost:8080/api/orders/${backendId}/status?status=${newStatus}`
+        `https://smartmart-w2gb.onrender.com/api/orders/${backendId}/status?status=${newStatus}`
       );
 
       await fetchOrders();

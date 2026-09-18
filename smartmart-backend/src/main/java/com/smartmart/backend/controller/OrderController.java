@@ -21,7 +21,10 @@ import com.smartmart.backend.repository.OrderRepository;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://your-vercel-domain.vercel.app"
+})
 public class OrderController {
 
     private final OrderRepository orderRepository;
@@ -65,14 +68,13 @@ public class OrderController {
 
                 item.setOrder(order);
 
-
                 // Calculate subtotal
                 if (item.getPrice() != null &&
                         item.getQuantity() != null) {
 
                     item.setSubtotal(
-                            item.getPrice()
-                                    * item.getQuantity()
+                            item.getPrice() *
+                            item.getQuantity()
                     );
                 }
             }
@@ -89,12 +91,30 @@ public class OrderController {
 
     // =========================================================
     // GET ALL ORDERS
+    // IMPORTANT:
+    // Keep this for ADMIN dashboard.
     // =========================================================
 
     @GetMapping
     public List<Order> getAllOrders() {
 
         return orderRepository.findAll();
+    }
+
+
+    // =========================================================
+    // GET ORDERS FOR A PARTICULAR CUSTOMER
+    // =========================================================
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Order>> getUserOrders(
+            @PathVariable Long userId
+    ) {
+
+        List<Order> orders =
+                orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        return ResponseEntity.ok(orders);
     }
 
 

@@ -40,20 +40,50 @@ function Checkout() {
         }));
     };
 
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
+
+            // =====================================================
+            // GET LOGGED-IN USER
+            // =====================================================
+
+            const storedUser =
+                localStorage.getItem("smartmartUser");
+
+            if (!storedUser) {
+                alert("Please login before placing an order.");
+                navigate("/login");
+                return;
+            }
+
+            const user = JSON.parse(storedUser);
+
+            if (!user.id) {
+                alert("User information is missing. Please login again.");
+                navigate("/login");
+                return;
+            }
+
+
+            // =====================================================
+            // PAYMENT METHOD
+            // =====================================================
+
             const paymentMethod =
                 document.querySelector(
                     'input[name="payment"]:checked'
                 )?.value || "COD";
+
 
             // =====================================================
             // CREATE ORDER ITEMS
             // =====================================================
 
             const orderItems = cartItems.map((item) => {
+
                 const productId =
                     item.productId ??
                     item.id;
@@ -88,11 +118,17 @@ function Checkout() {
                 };
             });
 
+
             // =====================================================
             // COMPLETE ORDER DATA
             // =====================================================
 
             const orderData = {
+
+                // IMPORTANT:
+                // Store the logged-in customer's ID
+                userId: Number(user.id),
+
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 email: formData.email,
@@ -101,50 +137,63 @@ function Checkout() {
                 city: formData.city,
                 state: formData.state,
                 pincode: formData.pincode,
+
                 paymentMethod: paymentMethod,
+
                 totalAmount: Number(totalPrice),
+
                 status: "PLACED",
 
-                // IMPORTANT
-                // Send products + seller information
                 orderItems: orderItems,
             };
 
-            console.log("Sending order:", orderData);
+
+            console.log(
+                "Sending order:",
+                orderData
+            );
+
 
             // =====================================================
             // CREATE ORDER
             // =====================================================
 
             const response = await axios.post(
-                " https://smartmart-w2gb.onrender.com/api/orders",
+                "https://smartmart-w2gb.onrender.com/api/orders",
                 orderData
             );
+
 
             console.log(
                 "Order created successfully:",
                 response.data
             );
 
+
             const orderId = response.data.id;
+
 
             clearCart();
 
-            navigate(`/order-success/${orderId}`);
+            navigate(
+                `/order-success/${orderId}`
+            );
 
         } catch (error) {
+
             console.error(
                 "Order creation failed:",
                 error
             );
 
             alert(
-                error.message ||
                 error.response?.data?.message ||
+                error.message ||
                 "Unable to place order."
             );
         }
     };
+
 
     if (cartItems.length === 0) {
         return (

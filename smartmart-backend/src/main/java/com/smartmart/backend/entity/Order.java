@@ -22,6 +22,13 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // =========================================================
+    // USER ID - IMPORTANT FOR CUSTOMER ORDER FILTERING
+    // =========================================================
+
+    @Column(nullable = true)
+    private Long userId;
+
     private String firstName;
 
     private String lastName;
@@ -85,6 +92,19 @@ public class Order {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+
+    // =========================================================
+    // USER ID
+    // =========================================================
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
 

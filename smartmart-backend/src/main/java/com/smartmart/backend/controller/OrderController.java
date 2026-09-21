@@ -22,14 +22,14 @@ import com.smartmart.backend.repository.OrderRepository;
 @RestController
 @RequestMapping("/api/orders")
 @CrossOrigin(origins = {
-    "http://localhost:5173",
-    "https://your-vercel-domain.vercel.app"
+        "http://localhost:5173",
+        "https://smartmart-three.vercel.app",
+        "https://smartmart-git-main-jit-ojhas-projects.vercel.app"
 })
 public class OrderController {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-
 
     // =========================================================
     // CONSTRUCTOR
@@ -37,119 +37,169 @@ public class OrderController {
 
     public OrderController(
             OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository
-    ) {
+            OrderItemRepository orderItemRepository) {
+
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
     }
-
 
     // =========================================================
     // CREATE ORDER
     // =========================================================
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(
-            @RequestBody Order order
-    ) {
+    public ResponseEntity<?> createOrder(
+            @RequestBody Order order) {
 
-        // Default order status
-        if (order.getStatus() == null ||
-                order.getStatus().isEmpty()) {
+        try {
 
-            order.setStatus("PLACED");
-        }
+            // -------------------------------------------------
+            // CHECK USER ID
+            // -------------------------------------------------
 
+            if (order.getUserId() == null) {
 
-        // Connect every item with this order
-        if (order.getOrderItems() != null) {
+                return ResponseEntity.badRequest().body(
+                        "User ID is required to create an order."
+                );
+            }
 
-            for (OrderItem item : order.getOrderItems()) {
+            // -------------------------------------------------
+            // DEFAULT STATUS
+            // -------------------------------------------------
 
-                item.setOrder(order);
+            if (order.getStatus() == null ||
+                    order.getStatus().isBlank()) {
 
-                // Calculate subtotal
-                if (item.getPrice() != null &&
-                        item.getQuantity() != null) {
+                order.setStatus("PLACED");
+            }
 
-                    item.setSubtotal(
-                            item.getPrice() *
-                            item.getQuantity()
-                    );
+            // -------------------------------------------------
+            // CONNECT ORDER ITEMS
+            // -------------------------------------------------
+
+            if (order.getOrderItems() != null) {
+
+                for (OrderItem item : order.getOrderItems()) {
+
+                    item.setOrder(order);
+
+                    // Calculate subtotal on backend
+                    if (item.getPrice() != null &&
+                            item.getQuantity() != null) {
+
+                        item.setSubtotal(
+                                item.getPrice()
+                                        * item.getQuantity()
+                        );
+                    }
                 }
             }
+
+            // -------------------------------------------------
+            // SAVE ORDER
+            // -------------------------------------------------
+
+            Order savedOrder =
+                    orderRepository.save(order);
+
+            System.out.println(
+                    "Order created successfully"
+                            + " | Order ID: "
+                            + savedOrder.getId()
+                            + " | User ID: "
+                            + savedOrder.getUserId()
+            );
+
+            return ResponseEntity.ok(savedOrder);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return ResponseEntity.internalServerError().body(
+                    "Failed to create order: "
+                            + e.getMessage()
+            );
         }
-
-
-        // Save order
-        Order savedOrder =
-                orderRepository.save(order);
-
-        return ResponseEntity.ok(savedOrder);
     }
-
 
     // =========================================================
     // GET ALL ORDERS
-    // IMPORTANT:
-    // Keep this for ADMIN dashboard.
+    //
+    // ADMIN USE ONLY
     // =========================================================
 
     @GetMapping
-    public List<Order> getAllOrders() {
+    public ResponseEntity<List<Order>> getAllOrders() {
 
-        return orderRepository.findAll();
+        return ResponseEntity.ok(
+                orderRepository.findAll()
+        );
     }
 
-
     // =========================================================
-    // GET ORDERS FOR A PARTICULAR CUSTOMER
+    // GET ORDERS FOR PARTICULAR CUSTOMER
+    //
+    // CUSTOMER DASHBOARD USES THIS
     // =========================================================
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Order>> getUserOrders(
-            @PathVariable Long userId
-    ) {
+            @PathVariable Long userId) {
+
+        System.out.println(
+                "Fetching orders for User ID: "
+                        + userId
+        );
 
         List<Order> orders =
-                orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+                orderRepository
+                        .findByUserIdOrderByCreatedAtDesc(
+                                userId
+                        );
+
+        System.out.println(
+                "Orders found for User ID "
+                        + userId
+                        + ": "
+                        + orders.size()
+        );
 
         return ResponseEntity.ok(orders);
     }
 
-
     // =========================================================
-    // GET ORDER BY ID
+    // GET SINGLE ORDER
     // =========================================================
 
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(
-            @PathVariable Long id
-    ) {
+            @PathVariable Long id) {
 
-        return orderRepository.findById(id)
+        return orderRepository
+                .findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(
                         ResponseEntity.notFound().build()
                 );
     }
 
-
     // =========================================================
-    // GET ORDERS FOR A PARTICULAR SELLER
+    // GET ORDERS FOR SELLER
     // =========================================================
 
     @GetMapping("/seller/{sellerId}")
     public ResponseEntity<List<OrderItem>> getSellerOrders(
-            @PathVariable Long sellerId
-    ) {
+            @PathVariable Long sellerId) {
 
         List<OrderItem> sellerOrders =
-                orderItemRepository.findBySellerId(sellerId);
+                orderItemRepository.findBySellerId(
+                        sellerId
+                );
 
         return ResponseEntity.ok(sellerOrders);
     }
-
 
     // =========================================================
     // UPDATE ORDER STATUS
@@ -158,10 +208,10 @@ public class OrderController {
     @PutMapping("/{id}/status")
     public ResponseEntity<Order> updateOrderStatus(
             @PathVariable Long id,
-            @RequestParam String status
-    ) {
+            @RequestParam String status) {
 
-        return orderRepository.findById(id)
+        return orderRepository
+                .findById(id)
                 .map(order -> {
 
                     order.setStatus(status);
@@ -175,15 +225,13 @@ public class OrderController {
                 );
     }
 
-
     // =========================================================
     // DELETE ORDER
     // =========================================================
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrder(
-            @PathVariable Long id
-    ) {
+            @PathVariable Long id) {
 
         if (!orderRepository.existsById(id)) {
 

@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
-    Package,
-    Clock,
-    CheckCircle,
-    Truck,
-    XCircle,
+Package,
+Clock,
+CheckCircle,
+Truck,
+XCircle,
 } from "lucide-react";
 
 function MyOrders() {
-
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-
 
     // =========================================================
     // FETCH CURRENT USER ORDERS
@@ -22,96 +20,115 @@ function MyOrders() {
         fetchOrders();
     }, []);
 
-
     const fetchOrders = async () => {
-
         try {
-
             // =================================================
             // GET LOGGED-IN USER
+            // Check both localStorage and sessionStorage
             // =================================================
 
             const storedUser =
-                localStorage.getItem("smartmartUser");
+                localStorage.getItem("smartmartUser") ||
+                sessionStorage.getItem("smartmartUser");
 
+            console.log("Stored user:", storedUser);
 
             if (!storedUser) {
-
                 console.error(
-                    "No logged-in user found."
+                    "No logged-in user found in localStorage or sessionStorage."
                 );
 
                 setOrders([]);
                 return;
             }
 
+            let user;
 
-            const user =
-                JSON.parse(storedUser);
+            try {
+                user = JSON.parse(storedUser);
+            } catch (error) {
+                console.error("Invalid smartmartUser data:", error);
 
-
-            if (!user.id) {
-
-                console.error(
-                    "Logged-in user ID is missing."
-                );
+                localStorage.removeItem("smartmartUser");
+                sessionStorage.removeItem("smartmartUser");
 
                 setOrders([]);
                 return;
             }
 
-
-            console.log(
-                "Fetching orders for user:",
-                user.id
-            );
-
+            console.log("Logged-in user:", user);
 
             // =================================================
-            // GET ONLY THIS USER'S ORDERS
+            // CHECK USER ID
+            // =================================================
+
+            if (!user || !user.id) {
+                console.error(
+                    "Logged-in user ID is missing:",
+                    user
+                );
+
+                setOrders([]);
+                return;
+            }
+
+            const userId = Number(user.id);
+
+            console.log(
+                "Fetching orders for user ID:",
+                userId
+            );
+
+            // =================================================
+            // GET ONLY CURRENT USER'S ORDERS
             // =================================================
 
             const response = await axios.get(
-                `https://smartmart-w2gb.onrender.com/api/orders/user/${user.id}`
+                `https://smartmart-w2gb.onrender.com/api/orders/user/${userId}`
             );
 
-
             console.log(
-                "My orders:",
+                "My orders response:",
                 response.data
             );
 
-
-            setOrders(
-                Array.isArray(response.data)
-                    ? response.data
-                    : []
-            );
+            if (Array.isArray(response.data)) {
+                setOrders(response.data);
+            } else {
+                setOrders([]);
+            }
 
         } catch (error) {
-
             console.error(
                 "Failed to fetch orders:",
                 error
             );
 
+            if (error.response) {
+                console.error(
+                    "Backend response:",
+                    error.response.data
+                );
+
+                console.error(
+                    "Status:",
+                    error.response.status
+                );
+            }
+
             setOrders([]);
 
         } finally {
-
             setLoading(false);
         }
     };
-
 
     // =========================================================
     // STATUS ICON
     // =========================================================
 
     const getStatusIcon = (status) => {
-
         switch (status) {
-
             case "PLACED":
                 return <Clock size={18} />;
 
@@ -132,15 +149,12 @@ function MyOrders() {
         }
     };
 
-
     // =========================================================
     // STATUS STYLE
     // =========================================================
 
     const getStatusStyle = (status) => {
-
         switch (status) {
-
             case "DELIVERED":
                 return "bg-green-100 text-green-700";
 
@@ -158,40 +172,31 @@ function MyOrders() {
         }
     };
 
-
     // =========================================================
     // LOADING
     // =========================================================
 
     if (loading) {
-
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-
                 <p className="text-gray-500 text-lg">
                     Loading your orders...
                 </p>
-
             </div>
         );
     }
-
 
     // =========================================================
     // PAGE
     // =========================================================
 
     return (
-
         <div className="min-h-screen bg-gray-50 px-4 py-10">
-
             <div className="max-w-6xl mx-auto">
-
 
                 {/* HEADER */}
 
                 <div className="mb-8">
-
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
                         My Orders
                     </h1>
@@ -199,14 +204,11 @@ function MyOrders() {
                     <p className="text-gray-500 mt-2">
                         View and track your SmartMart orders
                     </p>
-
                 </div>
-
 
                 {/* NO ORDERS */}
 
                 {orders.length === 0 ? (
-
                     <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
 
                         <Package
@@ -223,11 +225,9 @@ function MyOrders() {
                         </p>
 
                     </div>
-
                 ) : (
 
                     <div className="space-y-5">
-
 
                         {orders.map((order) => (
 
@@ -236,13 +236,11 @@ function MyOrders() {
                                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6"
                             >
 
-
                                 {/* ORDER HEADER */}
 
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
                                     <div>
-
                                         <p className="text-sm text-gray-500">
                                             Order ID
                                         </p>
@@ -250,59 +248,44 @@ function MyOrders() {
                                         <h2 className="text-lg font-bold text-gray-900">
                                             #{order.id}
                                         </h2>
-
                                     </div>
-
 
                                     <div
                                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold w-fit ${getStatusStyle(
                                             order.status
                                         )}`}
                                     >
-
                                         {getStatusIcon(order.status)}
 
                                         {order.status}
-
                                     </div>
 
                                 </div>
 
-
                                 {/* DIVIDER */}
 
-                                <div className="border-t border-gray-100 my-5">
-                                </div>
-
+                                <div className="border-t border-gray-100 my-5"></div>
 
                                 {/* ORDER DETAILS */}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
-
                                     {/* CUSTOMER */}
 
                                     <div>
-
                                         <p className="text-sm text-gray-500">
                                             Customer
                                         </p>
 
                                         <p className="font-semibold text-gray-800 mt-1">
-
                                             {order.firstName}{" "}
-
                                             {order.lastName}
-
                                         </p>
-
                                     </div>
-
 
                                     {/* PAYMENT */}
 
                                     <div>
-
                                         <p className="text-sm text-gray-500">
                                             Payment
                                         </p>
@@ -310,50 +293,37 @@ function MyOrders() {
                                         <p className="font-semibold text-gray-800 mt-1">
                                             {order.paymentMethod}
                                         </p>
-
                                     </div>
-
 
                                     {/* DELIVERY */}
 
                                     <div>
-
                                         <p className="text-sm text-gray-500">
                                             Delivery
                                         </p>
 
                                         <p className="font-semibold text-gray-800 mt-1">
-
                                             {order.city},{" "}
-
                                             {order.state}
-
                                         </p>
-
                                     </div>
-
 
                                     {/* TOTAL */}
 
                                     <div>
-
                                         <p className="text-sm text-gray-500">
                                             Total
                                         </p>
 
                                         <p className="font-bold text-blue-600 text-lg mt-1">
-
                                             ₹
                                             {Number(
                                                 order.totalAmount || 0
                                             ).toLocaleString("en-IN")}
-
                                         </p>
-
                                     </div>
 
                                 </div>
-
 
                                 {/* ADDRESS */}
 
@@ -364,17 +334,12 @@ function MyOrders() {
                                     </p>
 
                                     <p className="text-gray-700 mt-1">
-
                                         {order.address},{" "}
-
                                         {order.city},{" "}
-
                                         {order.state} - {order.pincode}
-
                                     </p>
 
                                 </div>
-
 
                                 {/* ORDER TRACKING */}
 
@@ -384,18 +349,14 @@ function MyOrders() {
                                         Order Tracking
                                     </h3>
 
-
                                     <div className="flex items-center justify-between">
-
 
                                         {/* PLACED */}
 
                                         <div className="flex flex-col items-center text-center">
 
                                             <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
-
                                                 <Package size={20} />
-
                                             </div>
 
                                             <p className="text-xs sm:text-sm font-medium mt-2">
@@ -404,10 +365,7 @@ function MyOrders() {
 
                                         </div>
 
-
-                                        <div className="flex-1 h-1 bg-gray-200 mx-2">
-                                        </div>
-
+                                        <div className="flex-1 h-1 bg-gray-200 mx-2"></div>
 
                                         {/* CONFIRMED */}
 
@@ -424,9 +382,7 @@ function MyOrders() {
                                                         : "bg-gray-200 text-gray-400"
                                                 }`}
                                             >
-
                                                 <CheckCircle size={20} />
-
                                             </div>
 
                                             <p className="text-xs sm:text-sm font-medium mt-2">
@@ -435,10 +391,7 @@ function MyOrders() {
 
                                         </div>
 
-
-                                        <div className="flex-1 h-1 bg-gray-200 mx-2">
-                                        </div>
-
+                                        <div className="flex-1 h-1 bg-gray-200 mx-2"></div>
 
                                         {/* SHIPPED */}
 
@@ -454,9 +407,7 @@ function MyOrders() {
                                                         : "bg-gray-200 text-gray-400"
                                                 }`}
                                             >
-
                                                 <Truck size={20} />
-
                                             </div>
 
                                             <p className="text-xs sm:text-sm font-medium mt-2">
@@ -465,10 +416,7 @@ function MyOrders() {
 
                                         </div>
 
-
-                                        <div className="flex-1 h-1 bg-gray-200 mx-2">
-                                        </div>
-
+                                        <div className="flex-1 h-1 bg-gray-200 mx-2"></div>
 
                                         {/* DELIVERED */}
 
@@ -481,9 +429,7 @@ function MyOrders() {
                                                         : "bg-gray-200 text-gray-400"
                                                 }`}
                                             >
-
                                                 <CheckCircle size={20} />
-
                                             </div>
 
                                             <p className="text-xs sm:text-sm font-medium mt-2">
@@ -493,20 +439,19 @@ function MyOrders() {
                                         </div>
 
                                     </div>
-
                                 </div>
 
                             </div>
-
                         ))}
 
                     </div>
                 )}
 
             </div>
-
         </div>
     );
 }
 
 export default MyOrders;
+
+

@@ -246,7 +246,7 @@ function MyOrders() {
                                         </p>
 
                                         <h2 className="text-lg font-bold text-gray-900">
-                                            #{order.id}
+                                            #{order.customerOrderNumber || order.id}
                                         </h2>
                                     </div>
 

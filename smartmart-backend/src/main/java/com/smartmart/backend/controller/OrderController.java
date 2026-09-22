@@ -31,6 +31,7 @@ public class OrderController {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
+
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
@@ -42,6 +43,7 @@ public class OrderController {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
     }
+
 
     // =========================================================
     // CREATE ORDER
@@ -64,6 +66,36 @@ public class OrderController {
                 );
             }
 
+
+            // -------------------------------------------------
+            // GET LAST ORDER NUMBER FOR THIS CUSTOMER
+            // -------------------------------------------------
+
+            Integer lastOrderNumber =
+                    orderRepository.findLastCustomerOrderNumber(
+                            order.getUserId()
+                    );
+
+            if (lastOrderNumber == null) {
+                lastOrderNumber = 0;
+            }
+
+
+            // -------------------------------------------------
+            // ASSIGN NEXT CUSTOMER ORDER NUMBER
+            //
+            // New customer:
+            // 0 + 1 = 1
+            //
+            // Existing customer with #1:
+            // 1 + 1 = 2
+            // -------------------------------------------------
+
+            order.setCustomerOrderNumber(
+                    lastOrderNumber + 1
+            );
+
+
             // -------------------------------------------------
             // DEFAULT STATUS
             // -------------------------------------------------
@@ -73,6 +105,7 @@ public class OrderController {
 
                 order.setStatus("PLACED");
             }
+
 
             // -------------------------------------------------
             // CONNECT ORDER ITEMS
@@ -96,6 +129,7 @@ public class OrderController {
                 }
             }
 
+
             // -------------------------------------------------
             // SAVE ORDER
             // -------------------------------------------------
@@ -103,15 +137,20 @@ public class OrderController {
             Order savedOrder =
                     orderRepository.save(order);
 
+
             System.out.println(
                     "Order created successfully"
-                            + " | Order ID: "
+                            + " | Database ID: "
                             + savedOrder.getId()
+                            + " | Customer Order Number: "
+                            + savedOrder.getCustomerOrderNumber()
                             + " | User ID: "
                             + savedOrder.getUserId()
             );
 
+
             return ResponseEntity.ok(savedOrder);
+
 
         } catch (Exception e) {
 
@@ -123,6 +162,7 @@ public class OrderController {
             );
         }
     }
+
 
     // =========================================================
     // GET ALL ORDERS
@@ -137,6 +177,7 @@ public class OrderController {
                 orderRepository.findAll()
         );
     }
+
 
     // =========================================================
     // GET ORDERS FOR PARTICULAR CUSTOMER
@@ -153,11 +194,13 @@ public class OrderController {
                         + userId
         );
 
+
         List<Order> orders =
                 orderRepository
                         .findByUserIdOrderByCreatedAtDesc(
                                 userId
                         );
+
 
         System.out.println(
                 "Orders found for User ID "
@@ -166,8 +209,10 @@ public class OrderController {
                         + orders.size()
         );
 
+
         return ResponseEntity.ok(orders);
     }
+
 
     // =========================================================
     // GET SINGLE ORDER
@@ -185,6 +230,7 @@ public class OrderController {
                 );
     }
 
+
     // =========================================================
     // GET ORDERS FOR SELLER
     // =========================================================
@@ -200,6 +246,7 @@ public class OrderController {
 
         return ResponseEntity.ok(sellerOrders);
     }
+
 
     // =========================================================
     // UPDATE ORDER STATUS
@@ -225,6 +272,7 @@ public class OrderController {
                 );
     }
 
+
     // =========================================================
     // DELETE ORDER
     // =========================================================
@@ -237,6 +285,7 @@ public class OrderController {
 
             return ResponseEntity.notFound().build();
         }
+
 
         orderRepository.deleteById(id);
 

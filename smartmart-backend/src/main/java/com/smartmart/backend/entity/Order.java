@@ -23,11 +23,23 @@ public class Order {
     private Long id;
 
     // =========================================================
-    // USER ID - IMPORTANT FOR CUSTOMER ORDER FILTERING
+    // USER ID
     // =========================================================
 
     @Column(nullable = true)
     private Long userId;
+
+    // =========================================================
+    // CUSTOMER-WISE ORDER NUMBER
+    //
+    // Example:
+    // User 5  -> 1, 2, 3
+    // User 10 -> 1, 2
+    // User 15 -> 1
+    // =========================================================
+
+    @Column(nullable = true)
+    private Integer customerOrderNumber;
 
     private String firstName;
 
@@ -76,6 +88,7 @@ public class Order {
 
     @PrePersist
     protected void onCreate() {
+
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
@@ -83,7 +96,7 @@ public class Order {
 
 
     // =========================================================
-    // GETTERS AND SETTERS
+    // ID
     // =========================================================
 
     public Long getId() {
@@ -108,6 +121,23 @@ public class Order {
     }
 
 
+    // =========================================================
+    // CUSTOMER ORDER NUMBER
+    // =========================================================
+
+    public Integer getCustomerOrderNumber() {
+        return customerOrderNumber;
+    }
+
+    public void setCustomerOrderNumber(Integer customerOrderNumber) {
+        this.customerOrderNumber = customerOrderNumber;
+    }
+
+
+    // =========================================================
+    // FIRST NAME
+    // =========================================================
+
     public String getFirstName() {
         return firstName;
     }
@@ -116,6 +146,10 @@ public class Order {
         this.firstName = firstName;
     }
 
+
+    // =========================================================
+    // LAST NAME
+    // =========================================================
 
     public String getLastName() {
         return lastName;
@@ -126,6 +160,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // EMAIL
+    // =========================================================
+
     public String getEmail() {
         return email;
     }
@@ -134,6 +172,10 @@ public class Order {
         this.email = email;
     }
 
+
+    // =========================================================
+    // PHONE
+    // =========================================================
 
     public String getPhone() {
         return phone;
@@ -144,6 +186,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // ADDRESS
+    // =========================================================
+
     public String getAddress() {
         return address;
     }
@@ -152,6 +198,10 @@ public class Order {
         this.address = address;
     }
 
+
+    // =========================================================
+    // CITY
+    // =========================================================
 
     public String getCity() {
         return city;
@@ -162,6 +212,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // STATE
+    // =========================================================
+
     public String getState() {
         return state;
     }
@@ -170,6 +224,10 @@ public class Order {
         this.state = state;
     }
 
+
+    // =========================================================
+    // PINCODE
+    // =========================================================
 
     public String getPincode() {
         return pincode;
@@ -180,6 +238,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // PAYMENT METHOD
+    // =========================================================
+
     public String getPaymentMethod() {
         return paymentMethod;
     }
@@ -188,6 +250,10 @@ public class Order {
         this.paymentMethod = paymentMethod;
     }
 
+
+    // =========================================================
+    // TOTAL AMOUNT
+    // =========================================================
 
     public Double getTotalAmount() {
         return totalAmount;
@@ -198,6 +264,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // STATUS
+    // =========================================================
+
     public String getStatus() {
         return status;
     }
@@ -207,6 +277,10 @@ public class Order {
     }
 
 
+    // =========================================================
+    // CREATED AT
+    // =========================================================
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -215,6 +289,10 @@ public class Order {
         this.createdAt = createdAt;
     }
 
+
+    // =========================================================
+    // ORDER ITEMS
+    // =========================================================
 
     public List<OrderItem> getOrderItems() {
         return orderItems;

@@ -11,30 +11,37 @@ import com.smartmart.backend.entity.Order;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // =========================================================
-    // GET ORDERS FOR PARTICULAR CUSTOMER
+    // GET USER ORDERS
     // =========================================================
 
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
 
     // =========================================================
-    // GET LAST CUSTOMER ORDER NUMBER
+    // GET HIGHEST CUSTOMER ORDER NUMBER
+    // =========================================================
     //
-    // If customer has:
-    // 1, 2, 3
+    // Example:
     //
-    // returns 3
+    // User 5:
+    // Order 1
+    // Order 2
+    // Order 3
     //
-    // If customer has no orders:
-    // returns 0
+    // Returns 3.
+    //
+    // New order becomes 4.
+    //
+    // For a new user, returns null.
+    // Therefore the first order becomes 1.
     // =========================================================
 
     @Query("""
-        SELECT COALESCE(MAX(o.customerOrderNumber), 0)
+        SELECT MAX(o.customerOrderNumber)
         FROM Order o
         WHERE o.userId = :userId
     """)
-    Integer findLastCustomerOrderNumber(
+    Long findMaxCustomerOrderNumber(
             @Param("userId") Long userId
     );
 }

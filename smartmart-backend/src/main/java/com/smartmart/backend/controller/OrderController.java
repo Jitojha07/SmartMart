@@ -68,31 +68,36 @@ public class OrderController {
 
 
             // -------------------------------------------------
-            // GET LAST ORDER NUMBER FOR THIS CUSTOMER
+            // GENERATE CUSTOMER ORDER NUMBER
+            // -------------------------------------------------
+            //
+            // Each customer has their own order numbering.
+            //
+            // User 1:
+            // Order 1
+            // Order 2
+            //
+            // User 2:
+            // Order 1
+            // Order 2
+            //
             // -------------------------------------------------
 
-            Integer lastOrderNumber =
-                    orderRepository.findLastCustomerOrderNumber(
+            Long maxOrderNumber =
+                    orderRepository.findMaxCustomerOrderNumber(
                             order.getUserId()
                     );
 
-            if (lastOrderNumber == null) {
-                lastOrderNumber = 0;
+            Long nextOrderNumber;
+
+            if (maxOrderNumber == null) {
+                nextOrderNumber = 1L;
+            } else {
+                nextOrderNumber = maxOrderNumber + 1L;
             }
 
-
-            // -------------------------------------------------
-            // ASSIGN NEXT CUSTOMER ORDER NUMBER
-            //
-            // New customer:
-            // 0 + 1 = 1
-            //
-            // Existing customer with #1:
-            // 1 + 1 = 2
-            // -------------------------------------------------
-
             order.setCustomerOrderNumber(
-                    lastOrderNumber + 1
+                    nextOrderNumber
             );
 
 
@@ -118,6 +123,7 @@ public class OrderController {
                     item.setOrder(order);
 
                     // Calculate subtotal on backend
+
                     if (item.getPrice() != null &&
                             item.getQuantity() != null) {
 
@@ -138,28 +144,50 @@ public class OrderController {
                     orderRepository.save(order);
 
 
+            // -------------------------------------------------
+            // DEBUG
+            // -------------------------------------------------
+
+            System.out.println(
+                    "======================================"
+            );
+
             System.out.println(
                     "Order created successfully"
-                            + " | Database ID: "
+            );
+
+            System.out.println(
+                    "Database Order ID: "
                             + savedOrder.getId()
-                            + " | Customer Order Number: "
-                            + savedOrder.getCustomerOrderNumber()
-                            + " | User ID: "
+            );
+
+            System.out.println(
+                    "User ID: "
                             + savedOrder.getUserId()
+            );
+
+            System.out.println(
+                    "Customer Order Number: "
+                            + savedOrder.getCustomerOrderNumber()
+            );
+
+            System.out.println(
+                    "======================================"
             );
 
 
             return ResponseEntity.ok(savedOrder);
 
-
         } catch (Exception e) {
 
             e.printStackTrace();
 
-            return ResponseEntity.internalServerError().body(
-                    "Failed to create order: "
-                            + e.getMessage()
-            );
+            return ResponseEntity
+                    .internalServerError()
+                    .body(
+                            "Failed to create order: "
+                                    + e.getMessage()
+                    );
         }
     }
 
@@ -167,7 +195,7 @@ public class OrderController {
     // =========================================================
     // GET ALL ORDERS
     //
-    // ADMIN USE ONLY
+    // ADMIN USE
     // =========================================================
 
     @GetMapping
@@ -180,9 +208,7 @@ public class OrderController {
 
 
     // =========================================================
-    // GET ORDERS FOR PARTICULAR CUSTOMER
-    //
-    // CUSTOMER DASHBOARD USES THIS
+    // GET ORDERS FOR CUSTOMER
     // =========================================================
 
     @GetMapping("/user/{userId}")
@@ -194,13 +220,11 @@ public class OrderController {
                         + userId
         );
 
-
         List<Order> orders =
                 orderRepository
                         .findByUserIdOrderByCreatedAtDesc(
                                 userId
                         );
-
 
         System.out.println(
                 "Orders found for User ID "
@@ -208,7 +232,6 @@ public class OrderController {
                         + ": "
                         + orders.size()
         );
-
 
         return ResponseEntity.ok(orders);
     }
@@ -286,9 +309,9 @@ public class OrderController {
             return ResponseEntity.notFound().build();
         }
 
-
         orderRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
     }
 }
+

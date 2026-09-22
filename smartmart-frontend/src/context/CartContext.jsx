@@ -29,9 +29,13 @@ export function CartProvider({ children }) {
                 return currentItems.map((item) =>
                     item.id === product.id
                         ? {
-                              ...item,
-                              quantity: item.quantity + 1,
-                          }
+                            ...item,
+                            sellerId:
+                                item.sellerId ??
+                                product.sellerId ??
+                                product.product?.sellerId,
+                            quantity: item.quantity + 1,
+                        }
                         : item
                 );
             }
@@ -40,6 +44,13 @@ export function CartProvider({ children }) {
                 ...currentItems,
                 {
                     ...product,
+
+                    // Explicitly preserve seller ID
+                    sellerId:
+                        product.sellerId ??
+                        product.product?.sellerId ??
+                        null,
+
                     quantity: 1,
                 },
             ];

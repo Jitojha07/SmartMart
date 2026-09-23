@@ -7,6 +7,7 @@ import {
     X,
     ChevronDown,
     ShoppingBag,
+    Heart,
 } from "lucide-react";
 
 function Products() {
@@ -24,34 +25,210 @@ function Products() {
     const [showFilters, setShowFilters] = useState(false);
 
     // =========================
-    // FETCH PRODUCTS
+    // WISHLIST STATE
+    // =========================
+    const [wishlistIds, setWishlistIds] = useState([]);
+    const [wishlistLoading, setWishlistLoading] = useState({});
+
+    // =========================
+    // API URL
+    // =========================
+    const API_URL = "https://smartmart-w2gb.onrender.com/api";
+
+    // =========================
+    // FETCH PRODUCTS + WISHLIST
     // =========================
     useEffect(() => {
         fetchProducts();
+        fetchWishlist();
     }, []);
 
+    // =========================
+    // FETCH PRODUCTS
+    // =========================
     const fetchProducts = async () => {
         try {
             setLoading(true);
             setError("");
 
             const response = await axios.get(
-                " https://smartmart-w2gb.onrender.com/api/products"
+                `${API_URL}/products`
             );
 
-            console.log("Products received from backend:", response.data);
+            console.log(
+                "Products received from backend:",
+                response.data
+            );
 
             if (Array.isArray(response.data)) {
                 setProducts(response.data);
             } else {
                 setProducts([]);
-                setError("Invalid product data received from server.");
+                setError(
+                    "Invalid product data received from server."
+                );
             }
         } catch (err) {
-            console.error("Error fetching products:", err);
-            setError("Unable to load products. Please try again.");
+            console.error(
+                "Error fetching products:",
+                err
+            );
+
+            setError(
+                "Unable to load products. Please try again."
+            );
         } finally {
             setLoading(false);
+        }
+    };
+
+    // =========================
+    // FETCH USER WISHLIST
+    // =========================
+    const fetchWishlist = async () => {
+        try {
+            const storedUser =
+                localStorage.getItem("smartmartUser");
+
+            // User is not logged in
+            if (!storedUser) {
+                setWishlistIds([]);
+                return;
+            }
+
+            const user = JSON.parse(storedUser);
+
+            // User ID is missing
+            if (!user?.id) {
+                setWishlistIds([]);
+                return;
+            }
+
+            const response = await axios.get(
+                `${API_URL}/wishlist/${user.id}`
+            );
+
+            if (Array.isArray(response.data)) {
+                const ids = response.data.map(
+                    (product) => product.id
+                );
+
+                setWishlistIds(ids);
+            } else {
+                setWishlistIds([]);
+            }
+        } catch (err) {
+            console.error(
+                "Error loading wishlist:",
+                err
+            );
+
+            setWishlistIds([]);
+        }
+    };
+
+    // =========================
+    // TOGGLE WISHLIST
+    // =========================
+    const toggleWishlist = async (productId) => {
+        try {
+            const storedUser =
+                localStorage.getItem("smartmartUser");
+
+            // Check login
+            if (!storedUser) {
+                alert(
+                    "Please login to add products to your wishlist."
+                );
+                return;
+            }
+
+            const user = JSON.parse(storedUser);
+
+            // Check user ID
+            if (!user?.id) {
+                alert(
+                    "Your login session is invalid. Please login again."
+                );
+                return;
+            }
+
+            // Start loading for this product
+            setWishlistLoading((prev) => ({
+                ...prev,
+                [productId]: true,
+            }));
+
+            const isWishlisted =
+                wishlistIds.includes(productId);
+
+            // =========================
+            // REMOVE FROM WISHLIST
+            // =========================
+            if (isWishlisted) {
+                await axios.delete(
+                    `${API_URL}/wishlist/${user.id}/${productId}`
+                );
+
+                setWishlistIds((prev) =>
+                    prev.filter(
+                        (id) => id !== productId
+                    )
+                );
+
+                console.log(
+                    "Product removed from wishlist:",
+                    productId
+                );
+            }
+
+            // =========================
+            // ADD TO WISHLIST
+            // =========================
+            else {
+                await axios.post(
+                    `${API_URL}/wishlist/${user.id}/${productId}`
+                );
+
+                setWishlistIds((prev) => [
+                    ...prev,
+                    productId,
+                ]);
+
+                console.log(
+                    "Product added to wishlist:",
+                    productId
+                );
+            }
+        } catch (err) {
+            console.error(
+                "Wishlist update failed:",
+                err
+            );
+
+            if (err.response?.status === 409) {
+                alert(
+                    "Product is already in your wishlist."
+                );
+
+                // Refresh wishlist in case state was outdated
+                fetchWishlist();
+            } else if (
+                err.response?.status === 404
+            ) {
+                alert(
+                    "Product was not found."
+                );
+            } else {
+                alert(
+                    "Unable to update wishlist. Please try again."
+                );
+            }
+        } finally {
+            setWishlistLoading((prev) => ({
+                ...prev,
+                [productId]: false,
+            }));
         }
     };
 
@@ -62,7 +239,10 @@ function Products() {
         const uniqueCategories = [
             ...new Set(
                 products
-                    .map((product) => product.category)
+                    .map(
+                        (product) =>
+                            product.category
+                    )
                     .filter(Boolean)
             ),
         ];
@@ -78,59 +258,84 @@ function Products() {
 
         // SEARCH
         if (search.trim() !== "") {
-            const searchText = search.toLowerCase();
+            const searchText =
+                search.toLowerCase();
 
-            result = result.filter((product) => {
-                const name = product.name?.toLowerCase() || "";
-                const description =
-                    product.description?.toLowerCase() || "";
-                const productCategory =
-                    product.category?.toLowerCase() || "";
+            result = result.filter(
+                (product) => {
+                    const name =
+                        product.name?.toLowerCase() ||
+                        "";
 
-                return (
-                    name.includes(searchText) ||
-                    description.includes(searchText) ||
-                    productCategory.includes(searchText)
-                );
-            });
+                    const description =
+                        product.description?.toLowerCase() ||
+                        "";
+
+                    const productCategory =
+                        product.category?.toLowerCase() ||
+                        "";
+
+                    return (
+                        name.includes(searchText) ||
+                        description.includes(
+                            searchText
+                        ) ||
+                        productCategory.includes(
+                            searchText
+                        )
+                    );
+                }
+            );
         }
 
         // CATEGORY
         if (category !== "All") {
             result = result.filter(
-                (product) => product.category === category
+                (product) =>
+                    product.category === category
             );
         }
 
         // PRICE
         result = result.filter(
             (product) =>
-                Number(product.price || 0) <= Number(maxPrice)
+                Number(product.price || 0) <=
+                Number(maxPrice)
         );
 
         // SORT
         if (sort === "low-high") {
             result.sort(
                 (a, b) =>
-                    Number(a.price || 0) - Number(b.price || 0)
+                    Number(a.price || 0) -
+                    Number(b.price || 0)
             );
         }
 
         if (sort === "high-low") {
             result.sort(
                 (a, b) =>
-                    Number(b.price || 0) - Number(a.price || 0)
+                    Number(b.price || 0) -
+                    Number(a.price || 0)
             );
         }
 
         if (sort === "name") {
             result.sort((a, b) =>
-                (a.name || "").localeCompare(b.name || "")
+                (a.name || "").localeCompare(
+                    b.name || ""
+                )
             );
         }
 
         return result;
-    }, [products, search, category, maxPrice, sort]);
+    }, [
+        products,
+        search,
+        category,
+        maxPrice,
+        sort,
+    ]);
 
     // =========================
     // CLEAR FILTERS
@@ -149,11 +354,14 @@ function Products() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+
+                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto">
+                    </div>
 
                     <p className="mt-4 text-gray-600 font-medium">
                         Loading products...
                     </p>
+
                 </div>
             </div>
         );
@@ -165,7 +373,9 @@ function Products() {
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+
                 <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
+
                     <h2 className="text-2xl font-bold text-red-600">
                         Something went wrong
                     </h2>
@@ -180,7 +390,9 @@ function Products() {
                     >
                         Try Again
                     </button>
+
                 </div>
+
             </div>
         );
     }
@@ -191,16 +403,21 @@ function Products() {
     return (
         <div className="min-h-screen bg-gray-50">
 
-            {/* HERO */}
+            {/* =========================
+                HERO
+            ========================= */}
             <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+
                 <div className="max-w-7xl mx-auto px-6 py-14">
 
                     <div className="flex items-center gap-3 mb-4">
+
                         <ShoppingBag size={32} />
 
                         <span className="text-blue-100 font-medium">
                             SmartMart Store
                         </span>
+
                     </div>
 
                     <h1 className="text-4xl md:text-5xl font-bold">
@@ -208,17 +425,23 @@ function Products() {
                     </h1>
 
                     <p className="text-blue-100 mt-3 max-w-2xl">
-                        Find electronics, fashion, footwear, household
-                        products and more — all in one place.
+                        Find electronics, fashion, footwear,
+                        household products and more — all in
+                        one place.
                     </p>
 
                 </div>
+
             </section>
 
-            {/* MAIN */}
+            {/* =========================
+                MAIN
+            ========================= */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-                {/* SEARCH + SORT */}
+                {/* =========================
+                    SEARCH + SORT
+                ========================= */}
                 <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
 
                     <div className="flex flex-col lg:flex-row gap-4">
@@ -235,7 +458,9 @@ function Products() {
                                 type="text"
                                 value={search}
                                 onChange={(e) =>
-                                    setSearch(e.target.value)
+                                    setSearch(
+                                        e.target.value
+                                    )
                                 }
                                 placeholder="Search products..."
                                 className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
@@ -243,7 +468,9 @@ function Products() {
 
                             {search && (
                                 <button
-                                    onClick={() => setSearch("")}
+                                    onClick={() =>
+                                        setSearch("")
+                                    }
                                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
                                 >
                                     <X size={18} />
@@ -255,11 +482,15 @@ function Products() {
                         {/* MOBILE FILTER */}
                         <button
                             onClick={() =>
-                                setShowFilters(!showFilters)
+                                setShowFilters(
+                                    !showFilters
+                                )
                             }
                             className="lg:hidden flex items-center justify-center gap-2 bg-gray-100 px-5 py-3 rounded-xl font-medium"
                         >
-                            <SlidersHorizontal size={20} />
+                            <SlidersHorizontal
+                                size={20}
+                            />
                             Filters
                         </button>
 
@@ -269,7 +500,9 @@ function Products() {
                             <select
                                 value={sort}
                                 onChange={(e) =>
-                                    setSort(e.target.value)
+                                    setSort(
+                                        e.target.value
+                                    )
                                 }
                                 className="appearance-none w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl outline-none cursor-pointer"
                             >
@@ -298,14 +531,21 @@ function Products() {
                         </div>
 
                     </div>
+
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
 
-                    {/* FILTER SIDEBAR */}
+                    {/* =========================
+                        FILTER SIDEBAR
+                    ========================= */}
                     <aside
                         className={`
-                            ${showFilters ? "block" : "hidden"}
+                            ${
+                                showFilters
+                                    ? "block"
+                                    : "hidden"
+                            }
                             lg:block
                             w-full lg:w-64
                             bg-white
@@ -323,7 +563,9 @@ function Products() {
                             </h2>
 
                             <button
-                                onClick={clearFilters}
+                                onClick={
+                                    clearFilters
+                                }
                                 className="text-sm text-blue-600 hover:text-blue-800"
                             >
                                 Clear all
@@ -340,28 +582,35 @@ function Products() {
 
                             <div className="space-y-3">
 
-                                {categories.map((item) => (
-                                    <label
-                                        key={item}
-                                        className="flex items-center gap-3 cursor-pointer"
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="category"
-                                            checked={
-                                                category === item
-                                            }
-                                            onChange={() =>
-                                                setCategory(item)
-                                            }
-                                            className="w-4 h-4 accent-blue-600"
-                                        />
+                                {categories.map(
+                                    (item) => (
+                                        <label
+                                            key={item}
+                                            className="flex items-center gap-3 cursor-pointer"
+                                        >
 
-                                        <span className="text-gray-600">
-                                            {item}
-                                        </span>
-                                    </label>
-                                ))}
+                                            <input
+                                                type="radio"
+                                                name="category"
+                                                checked={
+                                                    category ===
+                                                    item
+                                                }
+                                                onChange={() =>
+                                                    setCategory(
+                                                        item
+                                                    )
+                                                }
+                                                className="w-4 h-4 accent-blue-600"
+                                            />
+
+                                            <span className="text-gray-600">
+                                                {item}
+                                            </span>
+
+                                        </label>
+                                    )
+                                )}
 
                             </div>
 
@@ -382,46 +631,66 @@ function Products() {
                                 value={maxPrice}
                                 onChange={(e) =>
                                     setMaxPrice(
-                                        Number(e.target.value)
+                                        Number(
+                                            e.target.value
+                                        )
                                     )
                                 }
                                 className="w-full accent-blue-600"
                             />
 
                             <div className="flex justify-between mt-3 text-sm text-gray-500">
+
                                 <span>₹0</span>
-                                <span>₹10,00,000</span>
+
+                                <span>
+                                    ₹10,00,000
+                                </span>
+
                             </div>
 
                             <div className="mt-4 bg-blue-50 text-blue-700 font-semibold text-center py-2 rounded-lg">
+
                                 Up to ₹
-                                {Number(maxPrice).toLocaleString(
+                                {Number(
+                                    maxPrice
+                                ).toLocaleString(
                                     "en-IN"
                                 )}
+
                             </div>
 
                         </div>
 
                     </aside>
 
-                    {/* PRODUCTS */}
+                    {/* =========================
+                        PRODUCTS
+                    ========================= */}
                     <section className="flex-1">
 
                         {/* RESULTS HEADER */}
                         <div className="flex items-center justify-between mb-5">
 
                             <p className="text-gray-600">
+
                                 Showing{" "}
+
                                 <span className="font-semibold text-gray-900">
-                                    {filteredProducts.length}
+                                    {
+                                        filteredProducts.length
+                                    }
                                 </span>{" "}
+
                                 products
+
                             </p>
 
                         </div>
 
                         {/* NO PRODUCTS */}
-                        {filteredProducts.length === 0 ? (
+                        {filteredProducts.length ===
+                        0 ? (
 
                             <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
 
@@ -434,11 +703,14 @@ function Products() {
                                 </h2>
 
                                 <p className="text-gray-500 mt-2">
-                                    Try changing your search or filters.
+                                    Try changing your
+                                    search or filters.
                                 </p>
 
                                 <button
-                                    onClick={clearFilters}
+                                    onClick={
+                                        clearFilters
+                                    }
                                     className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
                                 >
                                     Clear Filters
@@ -450,88 +722,198 @@ function Products() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
 
-                                {filteredProducts.map((product) => (
+                                {filteredProducts.map(
+                                    (product) => (
 
-                                    <div
-                                        key={product.id}
-                                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition duration-300 group"
-                                    >
+                                        <div
+                                            key={
+                                                product.id
+                                            }
+                                            className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition duration-300 group"
+                                        >
 
-                                        {/* IMAGE */}
-                                        <div className="relative h-64 bg-gray-100 overflow-hidden">
+                                            {/* =========================
+                                                IMAGE
+                                            ========================= */}
+                                            <div className="relative h-64 bg-gray-100 overflow-hidden">
 
-                                            {product.image ? (
-                                                <img
-                                                    src={product.image}
-                                                    alt={product.name || "Product"}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                                    onError={(e) => {
-                                                        e.currentTarget.style.display =
-                                                            "none";
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                    <ShoppingBag size={48} />
-                                                </div>
-                                            )}
+                                                {product.image ? (
 
-                                            <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                                                {product.category || "General"}
-                                            </span>
+                                                    <img
+                                                        src={
+                                                            product.image
+                                                        }
+                                                        alt={
+                                                            product.name ||
+                                                            "Product"
+                                                        }
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                                                        onError={(
+                                                            e
+                                                        ) => {
+                                                            e.currentTarget.style.display =
+                                                                "none";
+                                                        }}
+                                                    />
 
-                                            {Number(product.stock) <= 5 && (
-                                                <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                                                    Low Stock
+                                                ) : (
+
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+
+                                                        <ShoppingBag
+                                                            size={
+                                                                48
+                                                            }
+                                                        />
+
+                                                    </div>
+
+                                                )}
+
+                                                {/* CATEGORY */}
+                                                <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                                                    {product.category ||
+                                                        "General"}
                                                 </span>
-                                            )}
 
-                                        </div>
-
-                                        {/* CONTENT */}
-                                        <div className="p-5">
-
-                                            <h2 className="text-xl font-bold text-gray-900">
-                                                {product.name || "Unnamed Product"}
-                                            </h2>
-
-                                            <p className="text-gray-500 text-sm mt-2 line-clamp-2">
-                                                {product.description ||
-                                                    "No description available."}
-                                            </p>
-
-                                            <div className="flex items-center justify-between mt-5">
-
-                                                <div>
-                                                    <p className="text-2xl font-bold text-gray-900">
-                                                        ₹
-                                                        {Number(
-                                                            product.price || 0
-                                                        ).toLocaleString(
-                                                            "en-IN"
-                                                        )}
-                                                    </p>
-
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {product.stock || 0}{" "}
-                                                        items available
-                                                    </p>
-                                                </div>
-
-                                                <Link
-                                                    to={`/products/${product.id}`}
-                                                    className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition"
+                                                {/* =========================
+                                                    WISHLIST BUTTON
+                                                ========================= */}
+                                                <button
+                                                    onClick={() =>
+                                                        toggleWishlist(
+                                                            product.id
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        wishlistLoading[
+                                                            product
+                                                                .id
+                                                        ]
+                                                    }
+                                                    className={`
+                                                        absolute
+                                                        top-4
+                                                        right-4
+                                                        w-11
+                                                        h-11
+                                                        rounded-full
+                                                        flex
+                                                        items-center
+                                                        justify-center
+                                                        shadow-md
+                                                        transition-all
+                                                        duration-200
+                                                        ${
+                                                            wishlistIds.includes(
+                                                                product.id
+                                                            )
+                                                                ? "bg-red-500 text-white hover:bg-red-600"
+                                                                : "bg-white text-gray-600 hover:text-red-500 hover:bg-red-50"
+                                                        }
+                                                        ${
+                                                            wishlistLoading[
+                                                                product
+                                                                    .id
+                                                            ]
+                                                                ? "opacity-50 cursor-not-allowed"
+                                                                : ""
+                                                        }
+                                                    `}
+                                                    title={
+                                                        wishlistIds.includes(
+                                                            product.id
+                                                        )
+                                                            ? "Remove from wishlist"
+                                                            : "Add to wishlist"
+                                                    }
                                                 >
-                                                    View Product
-                                                </Link>
+
+                                                    <Heart
+                                                        size={
+                                                            21
+                                                        }
+                                                        fill={
+                                                            wishlistIds.includes(
+                                                                product.id
+                                                            )
+                                                                ? "currentColor"
+                                                                : "none"
+                                                        }
+                                                    />
+
+                                                </button>
+
+                                                {/* LOW STOCK */}
+                                                {Number(
+                                                    product.stock
+                                                ) <= 5 && (
+
+                                                    <span className="absolute top-16 right-4 bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                                                        Low Stock
+                                                    </span>
+
+                                                )}
+
+                                            </div>
+
+                                            {/* =========================
+                                                CONTENT
+                                            ========================= */}
+                                            <div className="p-5">
+
+                                                <h2 className="text-xl font-bold text-gray-900">
+                                                    {product.name ||
+                                                        "Unnamed Product"}
+                                                </h2>
+
+                                                <p className="text-gray-500 text-sm mt-2 line-clamp-2">
+                                                    {product.description ||
+                                                        "No description available."}
+                                                </p>
+
+                                                <div className="flex items-center justify-between mt-5">
+
+                                                    <div>
+
+                                                        <p className="text-2xl font-bold text-gray-900">
+
+                                                            ₹
+                                                            {Number(
+                                                                product.price ||
+                                                                0
+                                                            ).toLocaleString(
+                                                                "en-IN"
+                                                            )}
+
+                                                        </p>
+
+                                                        <p className="text-xs text-gray-500 mt-1">
+
+                                                            {product.stock ||
+                                                                0}{" "}
+
+                                                            items available
+
+                                                        </p>
+
+                                                    </div>
+
+                                                    <Link
+                                                        to={`/products/${product.id}`}
+                                                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition"
+                                                    >
+                                                        View Product
+                                                    </Link>
+
+                                                </div>
 
                                             </div>
 
                                         </div>
 
-                                    </div>
-
-                                ))}
+                                    )
+                                )}
 
                             </div>
 
@@ -542,6 +924,7 @@ function Products() {
                 </div>
 
             </main>
+
         </div>
     );
 }

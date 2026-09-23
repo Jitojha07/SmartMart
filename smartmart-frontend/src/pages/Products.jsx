@@ -18,7 +18,6 @@ function Products() {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
 
-    // Keep a high default so products are not accidentally hidden
     const [maxPrice, setMaxPrice] = useState(1000000);
 
     const [sort, setSort] = useState("default");
@@ -34,6 +33,48 @@ function Products() {
     // API URL
     // =========================
     const API_URL = "https://smartmart-w2gb.onrender.com/api";
+
+    // =========================
+    // GET LOGGED-IN USER
+    // =========================
+    const getLoggedInUser = () => {
+        try {
+            // First check localStorage
+            let storedUser = localStorage.getItem("smartmartUser");
+
+            // If not found, check sessionStorage
+            if (!storedUser) {
+                storedUser =
+                    sessionStorage.getItem("smartmartUser");
+            }
+
+            // No logged-in user
+            if (!storedUser) {
+                return null;
+            }
+
+            const user = JSON.parse(storedUser);
+
+            // Make sure user object contains an ID
+            if (!user || !user.id) {
+                console.warn(
+                    "Logged-in user found, but user ID is missing:",
+                    user
+                );
+
+                return null;
+            }
+
+            return user;
+        } catch (error) {
+            console.error(
+                "Error reading logged-in user:",
+                error
+            );
+
+            return null;
+        }
+    };
 
     // =========================
     // FETCH PRODUCTS + WISHLIST
@@ -87,33 +128,43 @@ function Products() {
     // =========================
     const fetchWishlist = async () => {
         try {
-            const storedUser =
-                localStorage.getItem("smartmartUser");
+            const user = getLoggedInUser();
 
             // User is not logged in
-            if (!storedUser) {
+            if (!user) {
+                console.log(
+                    "No logged-in user found. Wishlist not loaded."
+                );
+
                 setWishlistIds([]);
                 return;
             }
 
-            const user = JSON.parse(storedUser);
-
-            // User ID is missing
-            if (!user?.id) {
-                setWishlistIds([]);
-                return;
-            }
+            console.log(
+                "Loading wishlist for user:",
+                user.id
+            );
 
             const response = await axios.get(
                 `${API_URL}/wishlist/${user.id}`
             );
 
+            console.log(
+                "Wishlist received:",
+                response.data
+            );
+
             if (Array.isArray(response.data)) {
-                const ids = response.data.map(
-                    (product) => product.id
-                );
+                const ids = response.data
+                    .map((product) => product.id)
+                    .filter((id) => id !== undefined && id !== null);
 
                 setWishlistIds(ids);
+
+                console.log(
+                    "Wishlist product IDs:",
+                    ids
+                );
             } else {
                 setWishlistIds([]);
             }
@@ -132,26 +183,25 @@ function Products() {
     // =========================
     const toggleWishlist = async (productId) => {
         try {
-            const storedUser =
-                localStorage.getItem("smartmartUser");
+            const user = getLoggedInUser();
 
-            // Check login
-            if (!storedUser) {
+            // =========================
+            // CHECK LOGIN
+            // =========================
+            if (!user) {
                 alert(
                     "Please login to add products to your wishlist."
                 );
+
                 return;
             }
 
-            const user = JSON.parse(storedUser);
-
-            // Check user ID
-            if (!user?.id) {
-                alert(
-                    "Your login session is invalid. Please login again."
-                );
-                return;
-            }
+            console.log(
+                "Wishlist action for user:",
+                user.id,
+                "product:",
+                productId
+            );
 
             // Start loading for this product
             setWishlistLoading((prev) => ({
@@ -211,13 +261,18 @@ function Products() {
                     "Product is already in your wishlist."
                 );
 
-                // Refresh wishlist in case state was outdated
                 fetchWishlist();
-            } else if (
-                err.response?.status === 404
-            ) {
+            } else if (err.response?.status === 404) {
                 alert(
                     "Product was not found."
+                );
+            } else if (err.response?.status === 401) {
+                alert(
+                    "Your login session has expired. Please login again."
+                );
+            } else if (err.response?.status === 403) {
+                alert(
+                    "You are not allowed to update the wishlist."
                 );
             } else {
                 alert(
@@ -787,8 +842,7 @@ function Products() {
                                                     }
                                                     disabled={
                                                         wishlistLoading[
-                                                            product
-                                                                .id
+                                                            product.id
                                                         ]
                                                     }
                                                     className={`
@@ -813,8 +867,7 @@ function Products() {
                                                         }
                                                         ${
                                                             wishlistLoading[
-                                                                product
-                                                                    .id
+                                                                product.id
                                                             ]
                                                                 ? "opacity-50 cursor-not-allowed"
                                                                 : ""
